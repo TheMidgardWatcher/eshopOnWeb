@@ -1,4 +1,5 @@
 ﻿using System.Net.Mime;
+using System.Text.Json;
 using Ardalis.ListStartupServices;
 using BlazorAdmin;
 using BlazorAdmin.Services;
@@ -17,20 +18,44 @@ using Microsoft.eShopWeb.Web;
 using Microsoft.eShopWeb.Web.Configuration;
 using Microsoft.eShopWeb.Web.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Azure.Identity;
+using Microsoft.eShopWeb.ApplicationCore;
+using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplicationInsightsTelemetry();
+
+//var keyVaultEndpoint = new Uri(Environment.GetEnvironmentVariable("VaultUri"));
+//builder.Configuration.AddAzureKeyVault(keyVaultEndpoint, new DefaultAzureCredential());
+
 builder.Logging.AddConsole();
 
-// use real database
-// Requires LocalDB which can be installed with SQL Server Express 2016
-// https://www.microsoft.com/en-us/download/details.aspx?id=54284
+builder.Services.AddSingleton(builder.Configuration);
+
+//// use real database
+//// Requires LocalDB which can be installed with SQL Server Express 2016
+//// https://www.microsoft.com/en-us/download/details.aspx?id=54284
 builder.Services.AddDbContext<CatalogContext>(c =>
     c.UseSqlServer(builder.Configuration.GetConnectionString("CatalogConnection")));
 
-// Add Identity DbContext
+//// Add Identity DbContext
 builder.Services.AddDbContext<AppIdentityDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection")));
+
+//builder.Services.AddDbContext<CatalogContext>(c =>
+//    c.UseSqlServer(builder.Configuration["Catalog_Secret"]));
+
+//builder.Services.AddDbContext<AppIdentityDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration["Identity_Secret"]));
+
+builder.Services.AddHttpClient();
+builder.Services.AddOptions();
+builder.Services.Configure<DeliveryProcessorServiceConfiguration>(opts =>
+{
+    builder.Configuration.GetSection(DeliveryProcessorServiceConfiguration.ConfigSection).Bind(opts);
+});
 
 builder.Services.AddCookieSettings();
 
@@ -104,6 +129,7 @@ builder.Services.AddScoped<HttpService>();
 builder.Services.AddBlazorServices();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["APPINSIGHTS_CONNECTIONSTRING"]);
 
 //_services = services; // used to debug registered services
 
@@ -184,9 +210,10 @@ using (var scope = app.Services.CreateScope())
         var catalogContext = scopedProvider.GetRequiredService<CatalogContext>();
         await CatalogContextSeed.SeedAsync(catalogContext, app.Logger);
 
+        var identityContext = scopedProvider.GetRequiredService<AppIdentityDbContext>();
         var userManager = scopedProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scopedProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        await AppIdentityDbContextSeed.SeedAsync(userManager, roleManager);
+        await AppIdentityDbContextSeed.SeedAsync(identityContext, userManager, roleManager);
     }
     catch (Exception ex)
     {

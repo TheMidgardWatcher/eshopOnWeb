@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.eShopWeb;
+using Microsoft.eShopWeb.ApplicationCore;
 using Microsoft.eShopWeb.ApplicationCore.Constants;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.ApplicationCore.Services;
@@ -29,6 +30,7 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddConsole();
+builder.Services.AddApplicationInsightsTelemetry();
 
 // use real database
 // Requires LocalDB which can be installed with SQL Server Express 2016
@@ -43,6 +45,15 @@ builder.Services.AddDbContext<AppIdentityDbContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
         .AddEntityFrameworkStores<AppIdentityDbContext>()
         .AddDefaultTokenProviders();
+
+builder.Services.AddHttpClient();
+builder.Services.AddOptions();
+builder.Services.Configure<OrderReserverServiceConfiguration>(opts =>
+{
+    builder.Configuration.GetSection(nameof(OrderReserverServiceConfiguration)).Bind(opts);
+});
+
+//throw new Exception("Cannot move further");
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 builder.Services.AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
@@ -172,9 +183,10 @@ using (var scope = app.Services.CreateScope())
         var catalogContext = scopedProvider.GetRequiredService<CatalogContext>();
         await CatalogContextSeed.SeedAsync(catalogContext, app.Logger);
 
+        var identityContext = scopedProvider.GetRequiredService<AppIdentityDbContext>();
         var userManager = scopedProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scopedProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        await AppIdentityDbContextSeed.SeedAsync(userManager, roleManager);
+        await AppIdentityDbContextSeed.SeedAsync(identityContext, userManager, roleManager);
     }
     catch (Exception ex)
     {

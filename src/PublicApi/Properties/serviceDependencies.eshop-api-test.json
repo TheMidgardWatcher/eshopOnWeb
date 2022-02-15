@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "mssql1": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourcegroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/eshoptestdbserver/databases/Identity_db",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:IdentityConnection"
+    },
+    "mssql2": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourcegroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/eshoptestdbserver/databases/Catalog_db",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:CatalogConnection"
+    }
+  }
+}

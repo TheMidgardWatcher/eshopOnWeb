@@ -1,0 +1,1 @@
+docker-compose  -f "C:\Sources\eShopOnWeb\docker-compose.yml" -f "C:\Sources\eShopOnWeb\docker-compose.override.yml" down

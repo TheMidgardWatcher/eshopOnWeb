@@ -2,13 +2,14 @@ version: '3.4'
 
 services:
   eshopwebmvc:
+    container_name: eshopwebmvc
     image: ${DOCKER_REGISTRY-}eshopwebmvc
     build:
       context: .
       dockerfile: src/Web/Dockerfile
   eshoppublicapi:
+    container_name: eshoppublicapi
     image: ${DOCKER_REGISTRY-}eshoppublicapi
     build:
       context: .
       dockerfile: src/PublicApi/Dockerfile
-

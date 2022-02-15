@@ -41,5 +41,7 @@ public class ExceptionMiddleware
                 Message = duplicationException.Message
             }.ToString());
         }
+
+        throw exception;
     }
 }
